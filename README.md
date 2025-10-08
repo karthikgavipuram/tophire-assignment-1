@@ -1,106 +1,56 @@
-This submission outlines the deployment of a highly available and scalable Kubernetes cluster. We've gone for a hands-on, self-managed Kubeadm setup, giving us full control, which is crucial for a production-grade environment.
+Kubernetes Production Environment Summary
+This project delivers a Highly Available (HA) and scalable Kubernetes application stack, demonstrating best practices for production deployment using a self-managed Kubeadm cluster.
 
-This project specifically demonstrates:
+Component	    Provisioning Tool	HA Feature Implemented
+Control Plane	Kubeadm / Terraform	External Load Balancer Endpoint (--control-plane-endpoint)
+Application (Pods)	Kubectl	Pod Anti-Affinity (spread across nodes)
+Availability	PDB	Pod Disruption Budget (minAvailable: 2)
+Scaling/Updates	Deployment	Zero-Downtime Rolling Update (maxUnavailable: 0)
+Routing	Helm / Ingress	NGINX Ingress Controller for external traffic
 
-Robust Infrastructure: Multi-node cluster using Kubeadm.
 
-High Availability & Scalability: A Deployment running 3 replicas of a sample application.
+1. Cluster Setup Overview (HA Strategy)
+The cluster is built on multiple VMs (min. 3 Masters, 2 Workers).
 
-Zero-Downtime Updates: Optimized Rolling Update configuration.
+HA Provisioning : Infrastructure is automated using Terraform.
 
-Edge Routing: NGINX Ingress Controller via Helm for external access.
+Control Plane HA: Master nodes are initialized using the load-balanced API endpoint (k8s-api.local:6443) and joined with the --control-plane flag to ensure etcd quorum and API server redundancy.
 
-We opted for a trio of Ubuntu 22.04 VMs for this setup: one control plane node (k8s-master) and two worker nodes (k8s-worker-1, k8s-worker-2).
+Networking: Flannel CNI is used with the Pod CIDR 10.244.0.0/16.
 
-1.1. Prerequisites (On ALL Nodes)
-You must run these commands on all three VMs. We are using Containerd as the runtime and targeting Kubernetes v1.28.5 for a stable version.
+2. Deployment Steps
+Assuming the cluster nodes are Ready, furthur steps:
 
-Disable Swap (Mandatory):
-
+2.1. Deploy Ingress Controller
 Bash
 
-# Example commands for K8s components installation (use your actual repo setup)
-sudo apt update && sudo apt install -y containerd.io
-# Install kubelet, kubeadm, kubectl v1.28.5 (adjust version as needed)
-sudo apt install -y kubelet=1.28.5-1.1 kubeadm=1.28.5-1.1 kubectl=1.28.5-1.1
-sudo apt-mark hold kubelet kubeadm kubectl
-
-# Configure containerd for systemd cgroup driver
-sudo sh -c "containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/g' > /etc/containerd/config.toml"
-sudo systemctl restart containerd
-sudo systemctl enable containerd
-1.2. Master Node Initialization (On k8s-master)
-The cluster initialization uses Flannel, hence the 10.244.0.0/16 Pod CIDR.
-
-Bash
-
-# Initialize the control plane, ensuring the endpoint is correct
-sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint=<MASTER_IP>
-
-# Set up kubectl config for the current user
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# Deploy the Flannel CNI add-on (Note: We are using Flannel here)
-kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
-1.3. Joining Worker Nodes
-On the worker nodes, use the kubeadm join command that the master initialization step outputs.
-
-Bash
-
-# Example command - replace <token> and <hash> with your values!
-sudo kubeadm join <MASTER_IP>:6443 --token <token> \
-    --discovery-token-ca-cert-hash sha256:<hash>
-2. Solution Deployment Steps
-2.1. Deploy NGINX Ingress Controller (Using Helm)
-Helm makes managing the complex Ingress Controller configuration a breeze.
-
-Bash
-
-# Add the official NGINX ingress chart repository
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
-
-# Install the controller. The service will default to NodePort on bare-metal.
 helm install nginx-ingress ingress-nginx/ingress-nginx
-2.2. Deploy Highly Available Application
-We are deploying the NGINX app (manifests/sample-app.yaml) configured for High Availability (3 replicas) and using strict RollingUpdate parameters (maxUnavailable: 0) to guarantee zero downtime during version upgrades.
+2.2. Deploy Application Stack (HA & Resiliency)
+The stack includes the Deployment (3 replicas, Anti-Affinity), Service, Ingress, and PDB.
 
 Bash
 
-kubectl apply -f manifests/application.yaml
-2.3. Configure Local Access
-To test the Ingress, you need the IP address of one of your cluster nodes (as the Ingress service is NodePort exposed).
+kubectl apply -f manifests/
+2.3. Verification Access
+Map the host to a worker node's IP for testing:
 
-Get Node IP: Find the public/private IP of any worker node.
-
-Edit Hosts File: Map the hostname (myapp.local) to the node IP on your local system's /etc/hosts file:
-
-<Worker_Node_IP> application.local
-3. Design Decisions & Trade-offs (Engineering Note)
-We chose the Kubeadm/Terraform approach over managed services (like EKS/GKE) for this assignment to demonstrate explicit control over the Kubernetes Control Plane lifecycle and to facilitate a bare-metal feel.
-
-Image Choice: We used a specific, stable version (nginx:1.23.4-alpine) instead of latest for production stability and a smaller image footprint.
-
-HA Database (Bonus): The PostgreSQL setup uses a single StatefulSet replica. While the design uses proper persistent storage, it is inherently non-HA and would typically require a specialized operator or external database service for a true production environment.
-
-4. Verification & Deliverables
-(Screenshots or command outputs would be included here)
-
-Pods & Nodes Status
 Bash
 
-kubectl get nodes
-# 
-kubectl get pods -o wide
-# [Image showing 3 running sample-app pods]
-List of Services and Ingress
-Bash
+# Add to your local /etc/hosts:
+<Worker_Node_IP> myapp.local
+3. Verification & Deliverables
+Showcasing the running HA components:
 
-kubectl get svc
-# [Image showing sample-app-service and nginx-ingress controller services]
-kubectl get ingress
-# [Image showing sample-app-ingress with myapp.local host]
-Ingress Access Verification
-(Screenshot showing the default NGINX welcome page when accessing http://myapp.local in a browser)
+Check	Command	Purpose
+Node Status	kubectl get nodes	Confirm all masters/workers are ready.
+Pod Spread	kubectl get pods -l app=sample-app -o wide	Verify pods are on separate nodes (Anti-Affinity).
+PDB Status	kubectl get pdb	Confirm the availability budget is active.
+External Access	Access http://myapp.local	Verify routing via Ingress.
+
+
+(Attach relevant images/screenshots demonstrating the successful output of these commands.)
+
+4. Bonus Implementation
+ Infrastructure setup is defined in the terraform/ directory.

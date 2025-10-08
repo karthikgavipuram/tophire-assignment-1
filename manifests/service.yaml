@@ -1,0 +1,16 @@
+# service.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-app-service
+  labels:
+    app: sample-app
+spec:
+  selector:
+    app: sample-app 
+  ports:
+    - protocol: TCP
+      port: 80          # Service port
+      targetPort: 80    # Container port
+  type: ClusterIP

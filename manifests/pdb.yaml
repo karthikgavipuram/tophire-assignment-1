@@ -1,0 +1,13 @@
+# pdb.yaml
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sample-app-pdb
+  labels:
+    app: sample-app
+spec:
+  minAvailable: 2 # Ensures at least 2 out of the 3 replicas are running
+  selector:
+    matchLabels:
+      app: sample-app # Targets the pods created by sample-app-deployment
