@@ -19,31 +19,6 @@ Disable Swap (Mandatory):
 
 Bash
 
-sudo swapoff -a
-sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-Enable required kernel modules and network settings:
-
-Bash
-
-cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-overlay
-br_netfilter
-EOF
-
-sudo modprobe overlay
-sudo modprobe br_netfilter
-
-cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables  = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-net.ipv4.ip_forward                 = 1
-EOF
-sudo sysctl --system
-Install Containerd and K8s Components (v1.28.5):
-(Follow the standard apt repository setup for containerd and Kubernetes.)
-
-Bash
-
 # Example commands for K8s components installation (use your actual repo setup)
 sudo apt update && sudo apt install -y containerd.io
 # Install kubelet, kubeadm, kubectl v1.28.5 (adjust version as needed)
@@ -94,7 +69,7 @@ We are deploying the NGINX app (manifests/sample-app.yaml) configured for High A
 
 Bash
 
-kubectl apply -f manifests/sample-app.yaml
+kubectl apply -f manifests/application.yaml
 2.3. Configure Local Access
 To test the Ingress, you need the IP address of one of your cluster nodes (as the Ingress service is NodePort exposed).
 
@@ -102,7 +77,7 @@ Get Node IP: Find the public/private IP of any worker node.
 
 Edit Hosts File: Map the hostname (myapp.local) to the node IP on your local system's /etc/hosts file:
 
-<Worker_Node_IP> myapp.local
+<Worker_Node_IP> application.local
 3. Design Decisions & Trade-offs (Engineering Note)
 We chose the Kubeadm/Terraform approach over managed services (like EKS/GKE) for this assignment to demonstrate explicit control over the Kubernetes Control Plane lifecycle and to facilitate a bare-metal feel.
 
