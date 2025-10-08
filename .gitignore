@@ -1,24 +1,36 @@
+# **********************************************
+# .gitignore for K8s & Terraform Project
+# **********************************************
 
-Thumbs.db
+# 1. General & OS Files
+# ------------------------------------
 .DS_Store
-.gradle
-build/
-target/
-out/
-.micronaut/
-.idea
-*.iml
-*.ipr
-*.iws
-.project
-.settings
-.classpath
-.factorypath
-.mvn
-mvnw
-mvnw.bat
-aot-jar.properties
-micronaut-cli.yml
-.vscode
-.aws-sam
-.idea
+*.swp
+*~
+.idea/
+.vscode/
+Thumbs.db
+
+# 2. Terraform State & Cache
+# ------------------------------------
+# CRITICAL: Never commit state files to Git
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log
+.terraform.lock.hcl
+
+# 3. Kubernetes & Cluster Artifacts
+# ------------------------------------
+# Local kubeconfig (SENSITIVE)
+*.kubeconfig
+/tmp/admin.conf
+kube-*.log
+/var/cache/
+
+# 4. SSH Keys and Secrets
+# ------------------------------------
+# Private keys (SENSITIVE)
+*.pem
+*.key
