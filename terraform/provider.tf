@@ -10,6 +10,4 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  # Note: Profile or access keys should be handled via environment variables, 
-  # not hardcoded here.
 }

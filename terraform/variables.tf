@@ -1,12 +1,12 @@
 # terraform/variables.tf
 variable "aws_region" {
   description = "The AWS region to deploy the infrastructure in."
-  default     = "us-east-1"
+  default     = "ap-south-1"
 }
 
 variable "ami_id" {
   description = "The AMI ID for the Ubuntu 22.04 server."
-  default     = "ami-053b0d53c27927909" # Example for us-east-1, verify latest Ubuntu 22.04 AMI
+  default     = "ami-053b0d53c27927909" # Example for ap-south-1, verify latest Ubuntu 22.04 AMI
 }
 
 variable "instance_type" {
