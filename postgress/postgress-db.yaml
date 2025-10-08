@@ -1,0 +1,74 @@
+# bonus/postgres-db.yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+stringData:
+  POSTGRES_USER: "user"
+  POSTGRES_PASSWORD: "password123"
+  POSTGRES_DB: "mydb"
+
+---
+apiVersion: vfs1
+kind: PersistentVolumeClaim # Claim for the persistent storage
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # storageClassName: standard # Uncomment and set if using a cloud provider
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-db
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: "postgres-headless"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+          name: postgres
+        envFrom:
+        - secretRef:
+            name: postgres-credentials # Use credentials from the Secret
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+  # volumeClaimTemplates are used for dynamic provisioning in StatefulSets
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless # Headless Service for StatefulSet
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  clusterIP: None
+  selector:
+    app: postgres
