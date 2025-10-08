@@ -22,7 +22,7 @@ Networking: Flannel CNI is used with the Pod CIDR 10.244.0.0/16.
 Assuming the cluster nodes are Ready, furthur steps:
 
 2.1. Deploy Ingress Controller
-Bash
+
 
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
@@ -30,13 +30,13 @@ helm install nginx-ingress ingress-nginx/ingress-nginx
 2.2. Deploy Application Stack (HA & Resiliency)
 The stack includes the Deployment (3 replicas, Anti-Affinity), Service, Ingress, and PDB.
 
-Bash
+
 
 kubectl apply -f manifests/
 2.3. Verification Access
 Map the host to a worker node's IP for testing:
 
-Bash
+
 
 # Add to your local /etc/hosts:
 <Worker_Node_IP> myapp.local
