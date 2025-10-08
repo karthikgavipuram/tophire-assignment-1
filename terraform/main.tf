@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1" # Change to your desired region
+  region = "ap-south-1" # Change to your desired region
 }
 
 # Data source for the latest Ubuntu AMI
